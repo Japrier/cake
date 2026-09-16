@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const cake = document.querySelector(".cake");
   const flavorSelect = document.getElementById("flavorSelect");
   const candleColorSelect = document.getElementById("candleColorSelect");
+  const musicSelect = document.getElementById("musicSelect");
   const candleCountDisplay = document.getElementById("candleCount");
   const shareBtn = document.getElementById("shareBtn");
   const resetBtn = document.getElementById("resetLinkBtn");
@@ -18,6 +19,45 @@ document.addEventListener("DOMContentLoaded", function () {
   // Track current settings
   let currentFlavor = "chocolate";
   let currentCandleColor = "red";
+
+  // ---- Music-on-blowout feature ----
+  // Map of selectable music tracks. Files live alongside index.html/script.js.
+  const musicTracks = {
+    none: null,
+    general: "general-celebration.mp3",
+    birthday: "birthday.mp3"
+  };
+  // Short codes used in the share link so URLs stay compact.
+  const musicCodeToKey = { "0": "none", "1": "general", "2": "birthday" };
+  const musicKeyToCode = { none: "0", general: "1", birthday: "2" };
+
+  let currentMusicKey = "none";
+  let musicAudioEl = null;
+  let musicHasPlayedForCurrentBlowout = false;
+
+  if (musicSelect) {
+    currentMusicKey = musicSelect.value; // Set initial value
+    musicSelect.addEventListener("change", () => {
+      currentMusicKey = musicSelect.value;
+    });
+  }
+
+  function stopMusic() {
+    if (musicAudioEl) {
+      musicAudioEl.pause();
+      musicAudioEl.currentTime = 0;
+    }
+  }
+
+  function playSelectedMusic() {
+    const trackFile = musicTracks[currentMusicKey];
+    if (!trackFile) return; // "none" selected
+    stopMusic();
+    musicAudioEl = new Audio(trackFile);
+    musicAudioEl.play().catch(err => {
+      console.log("Unable to play music: " + err);
+    });
+  }
 
   if (shareBtn) shareBtn.disabled = true; // Disable share button initially
 
@@ -41,6 +81,18 @@ document.addEventListener("DOMContentLoaded", function () {
   function updateCandleCount() {
     const activeCandles = candles.filter(c => !c.classList.contains("out")).length;
     if (candleCountDisplay) candleCountDisplay.textContent = activeCandles;
+
+    // If there's at least one lit candle again (e.g. more candles added after
+    // a full blowout), allow the music to trigger again next time they're all out.
+    if (activeCandles > 0) {
+      musicHasPlayedForCurrentBlowout = false;
+    }
+
+    // If every candle on the cake is out, trigger the selected music once.
+    if (candles.length > 0 && activeCandles === 0 && !musicHasPlayedForCurrentBlowout) {
+      musicHasPlayedForCurrentBlowout = true;
+      playSelectedMusic();
+    }
   }
 
 function addCandle(left, top, color = currentCandleColor) {
@@ -176,6 +228,7 @@ function restoreCandles(pts) {
     const cParam = params.get("c");
     const mParam = params.get("m");
     const fParam = params.get("f");
+    const sParam = params.get("s");
 
     if (cParam) {
       const pts = decodeCandlePoints(cParam);
@@ -199,6 +252,11 @@ function restoreCandles(pts) {
       if (cake) cake.classList.remove("vanilla");
       if (flavorSelect) flavorSelect.value = "chocolate";
     }
+
+    // Restore music selection ("s" holds the short code: 0=none, 1=general, 2=birthday)
+    const restoredMusicKey = musicCodeToKey[sParam] || "none";
+    currentMusicKey = restoredMusicKey;
+    if (musicSelect) musicSelect.value = restoredMusicKey;
   }
 
   // Apply flavor changes live
@@ -226,6 +284,10 @@ function restoreCandles(pts) {
     candles = [];
     updateCandleCount();
 
+    // stop any music that's currently playing and allow it to trigger again
+    stopMusic();
+    musicHasPlayedForCurrentBlowout = false;
+
     // clear message UI + state
     currentMessage = "";
     if (customMessageInput) customMessageInput.value = "";
@@ -234,6 +296,10 @@ function restoreCandles(pts) {
     // reset flavor UI
     if (flavorSelect) flavorSelect.value = "chocolate";
     if (cake) cake.classList.remove("vanilla");
+
+    // reset music UI
+    currentMusicKey = "none";
+    if (musicSelect) musicSelect.value = "none";
 
     // clear URL hash
     history.replaceState(null, '', location.pathname);
@@ -259,8 +325,9 @@ function restoreCandles(pts) {
       const candleHash = encodeCandlePoints();
       const hexMessage = toHex(currentMessage);
       const flavor = flavorSelect?.value || "chocolate"; // get selected flavor
+      const musicCode = musicKeyToCode[currentMusicKey] || "0";
 
-      const hashStr = `#c=${candleHash}&m=${hexMessage}&f=${flavor}`;
+      const hashStr = `#c=${candleHash}&m=${hexMessage}&f=${flavor}&s=${musicCode}`;
       const urlWithHash = location.pathname + hashStr;
       history.replaceState(null, '', urlWithHash);
 
