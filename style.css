@@ -113,6 +113,35 @@ body {
   border-color: #ba7cf4;
 }
 
+#musicSelect {
+  appearance: none;
+  background-color: #fff7f1;   /* same as flavor/candle selects */
+  color: #4b2354;
+  border: 2px solid #4b2354;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+  /* Add the custom arrow */
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='7' viewBox='0 0 12 7' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234b2354' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  padding-right: 30px;
+}
+
+/* Optional hover/focus to match flavor/candle selects */
+#musicSelect:hover,
+#musicSelect:focus {
+  background-color: #f1d8ff;
+  border-color: #ba7cf4;
+}
+
 .candle-count-display {
   position: fixed;
   top: 16px;
